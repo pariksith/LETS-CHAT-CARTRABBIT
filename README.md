@@ -12,9 +12,8 @@ This project is a full stack one-to-one chat application with:
 - One-to-one chat between registered users
 - Message history loading per conversation
 - Image, file, GIF, and sticker message support
-- Voice and video calling support
 - Contact info and profile panels
-- Responsive frontend built for desktop and mobile
+- Responsive frontend built for desktop 
 
 ## Tech Stack Summary
 
@@ -22,7 +21,6 @@ This project is a full stack one-to-one chat application with:
 - Backend: Laravel 10, PHP 8.1+, Sanctum
 - Database: MySQL
 - Media/GIF: GIPHY API
-- Calling: WebRTC with configurable STUN/TURN servers
 
 ## API Endpoint Summary
 
