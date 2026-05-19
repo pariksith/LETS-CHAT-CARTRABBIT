@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
     email           VARCHAR(255) NOT NULL UNIQUE,
     email_verified_at TIMESTAMP NULL DEFAULT NULL,
     password        VARCHAR(255) NOT NULL,
+    is_online       TINYINT(1) NOT NULL DEFAULT 0,
+    last_seen_at    TIMESTAMP NULL DEFAULT NULL,
     remember_token  VARCHAR(100) NULL,
     created_at      TIMESTAMP NULL DEFAULT NULL,
     updated_at      TIMESTAMP NULL DEFAULT NULL
@@ -25,6 +27,9 @@ CREATE TABLE IF NOT EXISTS messages (
     type            VARCHAR(255) NOT NULL DEFAULT 'text',
     content         TEXT NOT NULL,
     media_url       LONGTEXT NULL,
+    duration_seconds INT UNSIGNED NULL,
+    delivered_at    TIMESTAMP NULL DEFAULT NULL,
+    read_at         TIMESTAMP NULL DEFAULT NULL,
     created_at      TIMESTAMP NULL DEFAULT NULL,
     updated_at      TIMESTAMP NULL DEFAULT NULL,
 
