@@ -3,6 +3,9 @@ export const API_BASE =
 
 export const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY || ''
 
+export const SIGNALING_WS_URL =
+  import.meta.env.VITE_SIGNALING_WS_URL || 'ws://127.0.0.1:8081'
+
 const DEFAULT_ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
