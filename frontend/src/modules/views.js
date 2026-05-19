@@ -1,5 +1,7 @@
 import { escapeHtml } from './utils.js'
 
+const staticViewCache = new Map()
+
 function icon(name, className = '') {
   const icons = {
     bubbles: `
@@ -118,6 +120,11 @@ function icon(name, className = '') {
         <path d="M3.4 20.2 21 12 3.4 3.8l1.8 6.5L14 12l-8.8 1.7-1.8 6.5Z"/>
       </svg>
     `,
+    stop: `
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="7" y="7" width="10" height="10" rx="2"/>
+      </svg>
+    `,
     phone: `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6.8 4.8h3.1l1.3 3.9-1.8 1.8a14.2 14.2 0 0 0 4.1 4.1l1.8-1.8 3.9 1.3v3.1a1.9 1.9 0 0 1-1.9 1.9A15.5 15.5 0 0 1 4.9 6.7a1.9 1.9 0 0 1 1.9-1.9Z"/>
@@ -129,6 +136,21 @@ function icon(name, className = '') {
         <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v3M8.5 20h7"/>
       </svg>
     `,
+    checkSingle: `
+      <svg viewBox="0 0 16 15" fill="currentColor" aria-hidden="true">
+        <path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.54l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/>
+      </svg>
+    `,
+    checkDouble: `
+      <svg viewBox="0 0 16 15" fill="currentColor" aria-hidden="true">
+        <path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.540l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.88a.32.32 0 0 1-.484.032L3.724 9.587a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.540l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/>
+      </svg>
+    `,
+    checkDoubleBlue: `
+      <svg viewBox="0 0 16 15" fill="#53bdeb" aria-hidden="true">
+        <path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.88a.32.32 0 0 1-.484.032l-.358-.325a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.540l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.88a.32.32 0 0 1-.484.032L3.724 9.587a.32.32 0 0 0-.484.032l-.378.48a.418.418 0 0 0 .036.540l1.32 1.267a.32.32 0 0 0 .484-.034l6.272-8.048a.366.366 0 0 0-.064-.512z"/>
+      </svg>
+    `,
     video: `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3.5" y="6.5" width="11" height="11" rx="2.5"/>
@@ -138,6 +160,17 @@ function icon(name, className = '') {
     back: `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="m15 18-6-6 6-6"/>
+      </svg>
+    `,
+    moon: `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 14.2A8.2 8.2 0 1 1 9.8 4a6.8 6.8 0 0 0 10.2 10.2Z"/>
+      </svg>
+    `,
+    sun: `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"/>
       </svg>
     `,
     html: `
@@ -427,6 +460,23 @@ function formatMessageTime(value) {
   }).toLowerCase()
 }
 
+function formatShortTime(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).toLowerCase()
+}
+
 function formatSidebarDay(value) {
   if (!value) {
     return 'Today'
@@ -449,6 +499,134 @@ function formatSidebarDay(value) {
     month: 'short',
     day: 'numeric',
   })
+}
+
+function formatDuration(seconds) {
+  const totalSeconds = Math.max(0, Number(seconds) || 0)
+  const minutes = Math.floor(totalSeconds / 60)
+  const remaining = String(totalSeconds % 60).padStart(2, '0')
+  return `${minutes}:${remaining}`
+}
+
+function getAudioMimeType(mediaSource = '') {
+  if (!mediaSource) {
+    return ''
+  }
+
+  if (mediaSource.startsWith('data:')) {
+    const mime = mediaSource.slice(5).split(';')[0]
+    return mime || ''
+  }
+
+  const normalized = mediaSource.split('?')[0].toLowerCase()
+
+  if (normalized.endsWith('.webm')) {
+    return 'audio/webm'
+  }
+
+  if (normalized.endsWith('.mp3')) {
+    return 'audio/mpeg'
+  }
+
+  if (normalized.endsWith('.wav')) {
+    return 'audio/wav'
+  }
+
+  if (normalized.endsWith('.ogg')) {
+    return 'audio/ogg'
+  }
+
+  if (normalized.endsWith('.m4a') || normalized.endsWith('.mp4')) {
+    return 'audio/mp4'
+  }
+
+  if (normalized.endsWith('.aac')) {
+    return 'audio/aac'
+  }
+
+  return ''
+}
+
+function formatPresenceLabel(user) {
+  if (!user) {
+    return ''
+  }
+
+  if (user.is_online) {
+    return 'Online'
+  }
+
+  if (!user.last_seen_at) {
+    return 'Offline'
+  }
+
+  const date = new Date(user.last_seen_at)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Offline'
+  }
+
+  const now = new Date()
+  const sameDay = date.toDateString() === now.toDateString()
+  const time = formatShortTime(user.last_seen_at)
+
+  if (sameDay) {
+    return `Last seen today at ${time}`
+  }
+
+  return `Last seen ${date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  })} at ${time}`
+}
+
+function renderMessageStatus(message) {
+  if (message.read_at) {
+    return '<span class="chat-ticks read" aria-label="Read"><span>✓</span><span>✓</span></span>'
+  }
+
+  if (message.delivered_at) {
+    return '<span class="chat-ticks delivered" aria-label="Delivered"><span>✓</span><span>✓</span></span>'
+  }
+
+  return '<span class="chat-ticks sent" aria-label="Sent"><span>✓</span></span>'
+}
+
+function previewMessageLabel(message) {
+  if (!message) {
+    return ''
+  }
+
+  if (message.type === 'image') {
+    return 'Photo'
+  }
+
+  if (message.type === 'gif') {
+    return 'GIF'
+  }
+
+  if (message.type === 'sticker') {
+    return 'Sticker'
+  }
+
+  if (message.type === 'file') {
+    return message.content || 'Attachment'
+  }
+
+  if (message.type === 'audio' || message.type === 'voice') {
+    return 'Voice message'
+  }
+
+  return message.content || 'Message'
+}
+
+export function userPreviewLineMarkupView({ previewMessage, currentUserId, fallbackLabel = '' }) {
+  const previewSource = previewMessage ? previewMessageLabel(previewMessage) : fallbackLabel
+  const previewStatus = previewMessage && String(previewMessage.sender_id) === String(currentUserId)
+    ? renderMessageStatus(previewMessage)
+    : ''
+
+  return `<span>${escapeHtml(previewSource || fallbackLabel)}</span>${previewStatus}`
 }
 
 function callStatusText(callState) {
@@ -650,7 +828,13 @@ function appFrame(content, topbarActions = publicNav()) {
 }
 
 export function homeView() {
-  return appFrame(`
+  const cachedMarkup = staticViewCache.get('home')
+
+  if (cachedMarkup) {
+    return cachedMarkup
+  }
+
+  const markup = appFrame(`
     <main class="main home-main">
       <section class="hero hero-panel">
         <div class="hero-copy">
@@ -829,13 +1013,23 @@ export function homeView() {
       </section>
     </main>
   `)
+
+  staticViewCache.set('home', markup)
+
+  return markup
 }
 
 export function authView(type) {
   const isLogin = type === 'login'
+  const cacheKey = isLogin ? 'auth:login' : 'auth:register'
+  const cachedMarkup = staticViewCache.get(cacheKey)
+
+  if (cachedMarkup) {
+    return cachedMarkup
+  }
 
   if (isLogin) {
-    return `
+    const markup = `
       <div class="login-page">
         <header class="login-header">
           <div class="login-header-inner">
@@ -857,6 +1051,7 @@ export function authView(type) {
               <p>Enter your email and password to continue chatting from this browser.</p>
             </div>
             <div id="auth-error" class="error-box hidden"></div>
+            <div id="auth-status" class="auth-status hidden" aria-live="polite"></div>
             <form id="auth-form" class="login-form" action="javascript:void(0)" method="post" novalidate>
               <label class="login-field">
                 <span>Email</span>
@@ -864,7 +1059,7 @@ export function authView(type) {
               </label>
               <label class="login-field">
                 <span>Password</span>
-                <input name="password" type="password" placeholder="Enter your password" autocomplete="current-password" minlength="6" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\\d]).{6,15}" required />
+                <input name="password" type="password" placeholder="Enter your password" autocomplete="current-password" minlength="6" required />
               </label>
               <label class="remember-row">
                 <input type="checkbox" checked />
@@ -877,11 +1072,14 @@ export function authView(type) {
         </main>
       </div>
     `
+
+    staticViewCache.set(cacheKey, markup)
+
+    return markup
   }
 
   const authClass = 'register-mode'
-
-  return appFrame(`
+  const markup = appFrame(`
     <main class="main auth-main">
       <section class="card auth-card ${authClass}">
         <div class="auth-hero">
@@ -905,17 +1103,22 @@ export function authView(type) {
           </div>
         </div>
         <div id="auth-error" class="error-box hidden"></div>
+        <div id="auth-status" class="auth-status hidden" aria-live="polite"></div>
         <form id="auth-form" class="auth-form" action="javascript:void(0)" method="post" novalidate>
           <label class="field"><span>${icon('user', 'field-icon')}Name</span><input name="name" type="text" placeholder="Your name" autocomplete="name" maxlength="255" required /></label>
           <label class="field"><span>${icon('mail', 'field-icon')}Email</span><input name="email" type="email" placeholder="you@example.com" autocomplete="email" required /></label>
-          <label class="field"><span>${icon('lock', 'field-icon')}Password</span><input name="password" type="password" placeholder="6 to 15 chars with letter, number, symbol" autocomplete="new-password" minlength="6" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,15}" required /></label>
-          <label class="field"><span>${icon('lock', 'field-icon')}Confirm Password</span><input name="password_confirmation" type="password" placeholder="Re-enter your password" autocomplete="new-password" minlength="6" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,15}" required /></label>
+          <label class="field"><span>${icon('lock', 'field-icon')}Password</span><input name="password" type="password" placeholder="At least 6 characters" autocomplete="new-password" minlength="6" required /></label>
+          <label class="field"><span>${icon('lock', 'field-icon')}Confirm Password</span><input name="password_confirmation" type="password" placeholder="Re-enter your password" autocomplete="new-password" minlength="6" required /></label>
           <button type="submit" class="button button-primary button-wide">${icon('userPlus', 'button-icon')}Create Account</button>
         </form>
         <p class="auth-switch">Already have an account? <a href="/login" data-link>Log in</a></p>
       </section>
     </main>
   `)
+
+  staticViewCache.set(cacheKey, markup)
+
+  return markup
 }
 
 export function loadingView() {
@@ -945,34 +1148,35 @@ export function emptyThreadView() {
   `
 }
 
-export function messagesPaneView({ selectedUser, messages, currentUserId, pickerState, toolbarState, callState }) {
-  if (!selectedUser) {
-    return emptyThreadView()
-  }
-
+export function threadMessagesMarkupView({ messages, currentUserId, toolbarState }) {
   const messageSearch = toolbarState?.searchQuery?.trim().toLowerCase() || ''
   const filteredMessages = messageSearch
     ? messages.filter((message) => (message.content || '').toLowerCase().includes(messageSearch))
     : messages
-
+  const emptyMessagesMarkup = messageSearch
+    ? '<p class="chat-placeholder">No matching messages found.</p>'
+    : '<p class="chat-placeholder">No messages yet.</p>'
   const messagesMarkup = filteredMessages
     .map((message) => {
       const own = String(message.sender_id) === String(currentUserId)
       const timeLabel = formatMessageTime(message.created_at)
       const isImage = message.type === 'gif' || message.type === 'sticker' || message.type === 'image'
       const isFile = message.type === 'file'
+      const isAudio = message.type === 'audio' || message.type === 'voice'
+      const mediaSource = message.media_url || (isImage ? message.content : '')
+      const audioMimeType = isAudio ? getAudioMimeType(mediaSource) : ''
 
       return `
-        <div class="chat-message-row ${own ? 'own' : ''}">
+        <div class="chat-message-row ${own ? 'own' : ''}" data-message-id="${escapeHtml(String(message.id || ''))}">
           <div class="chat-message-bubble ${own ? 'own' : ''}">
             ${isImage
               ? `<span class="chat-media">
-                  <a class="chat-media-link" href="${escapeHtml(message.media_url || '#')}" target="_blank" rel="noreferrer">
-                    <img src="${escapeHtml(message.media_url || '')}" alt="${escapeHtml(message.content || message.type)}" loading="lazy" decoding="async" />
+                  <a class="chat-media-link" href="${escapeHtml(mediaSource || '#')}" target="_blank" rel="noreferrer">
+                    <img src="${escapeHtml(mediaSource || '')}" alt="${escapeHtml(message.content || message.type)}" loading="lazy" decoding="async" />
                   </a>
                   <span class="chat-media-meta">
                     <span class="chat-media-label">${escapeHtml(message.content || message.type)}</span>
-                    <a class="chat-media-download" href="${escapeHtml(message.media_url || '#')}" download="${escapeHtml(message.content || 'image')}">Download</a>
+                    <a class="chat-media-download" href="${escapeHtml(mediaSource || '#')}" download="${escapeHtml(message.content || 'image')}">Download</a>
                   </span>
                 </span>`
               : isFile
@@ -983,30 +1187,76 @@ export function messagesPaneView({ selectedUser, messages, currentUserId, picker
                       <span>Tap to download</span>
                     </span>
                   </a>`
+                : isAudio
+                  ? `<div class="chat-audio-card">
+                      <audio controls preload="metadata">
+                        <source src="${escapeHtml(message.media_url || '')}" ${audioMimeType ? `type="${escapeHtml(audioMimeType)}"` : ''} />
+                      </audio>
+                      <span class="chat-audio-meta">
+                        <strong>${escapeHtml(message.content || 'Voice message')}</strong>
+                        <span>${escapeHtml(formatDuration(message.duration_seconds))}</span>
+                      </span>
+                    </div>`
               : `<span class="chat-message-text">${escapeHtml(message.content)}</span>`
             }
-            <span class="chat-message-time">${timeLabel}</span>
+            <span class="chat-message-meta">
+              <span class="chat-message-time">${timeLabel}</span>
+              ${own ? renderMessageStatus(message) : ''}
+            </span>
           </div>
         </div>
       `
     })
     .join('')
 
+  return messagesMarkup || emptyMessagesMarkup
+}
+
+export function messagesPaneView({ selectedUser, messages, currentUserId, pickerState, toolbarState, callState, recordingState }) {
+  if (!selectedUser) {
+    return emptyThreadView()
+  }
+
+  if (toolbarState?.threadLoading && messages.length === 0) {
+    return `
+      <div class="chat-empty">
+        <div class="chat-empty-card">
+          ${icon('chat', 'chat-empty-icon')}
+          <h2>Loading conversation</h2>
+          <p>Fetching previous messages for this chat.</p>
+        </div>
+      </div>
+    `
+  }
+
+  const composerLocked = Boolean(recordingState?.active || recordingState?.sending)
+  const threadActionsDisabled = composerLocked
+  const composerPlaceholder = recordingState?.sending
+    ? 'Sending voice message...'
+    : recordingState?.active
+      ? 'Recording voice message...'
+      : 'Type a message...'
+  const composerValue = composerLocked ? '' : (pickerState?.draft || '')
+  const sendButtonMarkup = recordingState?.active
+    ? `<button type="button" class="chat-send-button recording-stop" data-record-action="stop" aria-label="Stop and send voice recording" title="Stop and send voice recording">${icon('stop', 'chat-toolbar-icon')}</button>`
+    : `<button type="submit" class="chat-send-button" ${recordingState?.sending ? 'disabled' : ''} aria-label="Send message" title="Send message">${icon('send', 'chat-toolbar-icon')}</button>`
+  const messagesMarkup = threadMessagesMarkupView({ messages, currentUserId, toolbarState })
+
   return `
     <div class="chat-thread">
       <div class="chat-thread-head">
         <div class="chat-thread-contact">
           <span class="avatar chat-thread-avatar">${escapeHtml(selectedUser.name?.slice(0, 1) || '?')}</span>
-          <div>
+          <div class="chat-thread-contact-copy">
             <strong>${escapeHtml(selectedUser.name)}</strong>
-            <span>${escapeHtml(selectedUser.email)}</span>
+            <span class="${selectedUser.is_online ? 'presence-online' : ''}">${escapeHtml(formatPresenceLabel(selectedUser))}</span>
           </div>
         </div>
         <div class="chat-thread-actions">
-          <button type="button" class="chat-icon-button" data-thread-action="video">${icon('video', 'chat-toolbar-icon')}</button>
-          <button type="button" class="chat-icon-button" data-thread-action="call">${icon('phone', 'chat-toolbar-icon')}</button>
-          <button type="button" class="chat-icon-button" data-thread-action="search">${icon('search', 'chat-toolbar-icon')}</button>
-          <button type="button" class="chat-icon-button" data-thread-action="menu">${icon('menu', 'chat-toolbar-icon')}</button>
+          <button type="button" class="chat-icon-button" data-thread-action="video" ${threadActionsDisabled ? 'disabled' : ''}>${icon('video', 'chat-toolbar-icon')}</button>
+          <button type="button" class="chat-icon-button" data-thread-action="call" ${threadActionsDisabled ? 'disabled' : ''}>${icon('phone', 'chat-toolbar-icon')}</button>
+          <button type="button" class="chat-icon-button" data-thread-action="search" ${threadActionsDisabled ? 'disabled' : ''}>${icon('search', 'chat-toolbar-icon')}</button>
+          <button type="button" class="chat-icon-button" data-thread-action="menu" ${threadActionsDisabled ? 'disabled' : ''}>${icon('menu', 'chat-toolbar-icon')}</button>
         </div>
       </div>
       ${toolbarState?.banner ? `<div class="chat-toolbar-banner">${escapeHtml(toolbarState.banner)}</div>` : ''}
@@ -1022,14 +1272,20 @@ export function messagesPaneView({ selectedUser, messages, currentUserId, picker
           <button type="button" data-menu-action="clear">Clear Chat</button>
         </div>
       ` : ''}
-      <div class="chat-thread-messages">
-        ${messagesMarkup || '<p class="chat-placeholder">No matching messages found.</p>'}
-      </div>
-      <form id="message-form" class="chat-input-bar">
-        <button type="button" class="chat-composer-icon" data-attach-toggle>${icon('plus', 'chat-toolbar-icon')}</button>
-        <button type="button" class="chat-composer-icon" data-picker-toggle>${icon('smile', 'chat-toolbar-icon')}</button>
-        <textarea id="message-input" name="message" placeholder="Type a message..." autocomplete="off" maxlength="1000" rows="1" required>${escapeHtml(pickerState?.draft || '')}</textarea>
-        <button type="submit" class="chat-send-button">${icon('send', 'chat-toolbar-icon')}</button>
+      <div class="chat-thread-messages">${messagesMarkup}</div>
+      ${recordingState?.active || recordingState?.sending ? `
+        <div class="chat-recording-banner ${recordingState.active ? 'active' : ''}">
+          <span class="chat-recording-dot" aria-hidden="true"></span>
+          <strong>${recordingState.sending ? 'Sending voice message...' : 'Recording voice message'}</strong>
+          <span id="chat-recording-duration">${escapeHtml(formatDuration(Math.floor((recordingState.durationMs || 0) / 1000)))}</span>
+        </div>
+      ` : ''}
+      <form id="message-form" class="chat-input-bar ${composerLocked ? 'recording' : ''}">
+        <button type="button" class="chat-composer-icon" data-attach-toggle ${composerLocked ? 'disabled' : ''} aria-label="Attach file" title="Attach file">${icon('plus', 'chat-toolbar-icon')}</button>
+        <button type="button" class="chat-composer-icon" data-picker-toggle ${composerLocked ? 'disabled' : ''} aria-label="Open emoji picker" title="Open emoji picker">${icon('smile', 'chat-toolbar-icon')}</button>
+        <button type="button" class="chat-composer-icon ${recordingState?.active ? 'active' : ''}" data-record-action="${recordingState?.active ? 'stop' : 'start'}" ${recordingState?.sending ? 'disabled' : ''} aria-label="${recordingState?.active ? 'Stop voice recording' : 'Start voice recording'}" title="${recordingState?.active ? 'Stop voice recording' : 'Start voice recording'}">${icon('mic', 'chat-toolbar-icon')}</button>
+        <textarea id="message-input" name="message" placeholder="${escapeHtml(composerPlaceholder)}" autocomplete="off" maxlength="1000" rows="1" ${composerLocked ? 'readonly' : 'required'}>${escapeHtml(composerValue)}</textarea>
+        ${sendButtonMarkup}
         <input id="attach-image-input" type="file" accept="image/*" hidden />
         <input id="attach-file-input" type="file" hidden />
       </form>
@@ -1040,10 +1296,20 @@ export function messagesPaneView({ selectedUser, messages, currentUserId, picker
   `
 }
 
-export function chatView({ user, users, selectedUserId, messages, pickerState, toolbarState, callState }) {
+export function chatView({ user, users, selectedUserId, messages, pickerState, toolbarState, callState, recordingState, themeMode, conversationPreviews }) {
   const selectedUser = users.find((chatUser) => chatUser.id === selectedUserId)
   const hasProfilePanel = Boolean(toolbarState?.selfProfileOpen || toolbarState?.profileOpen)
+  const sidebarLocked = Boolean(recordingState?.active || recordingState?.sending)
   const sidebarSearch = toolbarState?.sidebarQuery?.trim().toLowerCase() || ''
+  const duplicateNameCounts = users.reduce((counts, chatUser) => {
+    const normalizedName = (chatUser.name || '').trim().toLowerCase()
+
+    if (normalizedName) {
+      counts[normalizedName] = (counts[normalizedName] || 0) + 1
+    }
+
+    return counts
+  }, {})
   const visibleUsers = sidebarSearch
     ? users.filter((chatUser) =>
       [chatUser.name, chatUser.email]
@@ -1053,23 +1319,29 @@ export function chatView({ user, users, selectedUserId, messages, pickerState, t
     : users
   const usersMarkup = visibleUsers
     .map((chatUser) => {
-      const activeThreadPreview = chatUser.id === selectedUserId && messages.length
-        ? messages[messages.length - 1]
-        : null
+      const normalizedName = (chatUser.name || '').trim().toLowerCase()
+      const hasDuplicateName = normalizedName && duplicateNameCounts[normalizedName] > 1
+      const displayName = hasDuplicateName
+        ? `${chatUser.name} · ${chatUser.email}`
+        : chatUser.name
+      const activeThreadPreview = conversationPreviews?.[chatUser.id] || null
       const previewSource = activeThreadPreview
-        ? (activeThreadPreview.content || `${activeThreadPreview.type} message`)
-        : `Message ${chatUser.name} directly`
+        ? previewMessageLabel(activeThreadPreview)
+        : (hasDuplicateName ? chatUser.email : `Message ${chatUser.name} directly`)
       const previewDay = activeThreadPreview ? formatSidebarDay(activeThreadPreview.created_at) : 'Today'
+      const previewStatus = activeThreadPreview && String(activeThreadPreview.sender_id) === String(user?.id)
+        ? renderMessageStatus(activeThreadPreview)
+        : ''
 
       return `
-        <button class="user-item ${selectedUserId === chatUser.id ? 'active' : ''}" data-user-id="${chatUser.id}">
+        <button class="user-item ${selectedUserId === chatUser.id ? 'active' : ''}" data-user-id="${chatUser.id}" ${sidebarLocked ? 'disabled' : ''}>
           <span class="avatar chat-list-avatar">${escapeHtml(chatUser.name?.slice(0, 1) || '?')}</span>
           <span class="user-copy">
             <span class="user-row-top">
-              <strong>${escapeHtml(chatUser.name)}</strong>
-              <small>${escapeHtml(previewDay)}</small>
+              <strong>${escapeHtml(displayName)}</strong>
+              <small class="${chatUser.is_online ? 'presence-online' : ''}">${escapeHtml(chatUser.is_online ? 'Online' : previewDay)}</small>
             </span>
-            <small>${escapeHtml(previewSource || chatUser.email)}</small>
+            <small class="user-preview-line"><span>${escapeHtml(previewSource || formatPresenceLabel(chatUser) || chatUser.email)}</span>${previewStatus}</small>
           </span>
         </button>
       `
@@ -1077,18 +1349,20 @@ export function chatView({ user, users, selectedUserId, messages, pickerState, t
     .join('')
 
   return `
-    <div class="chat-page">
+    <div class="chat-page ${themeMode === 'dark' ? 'theme-dark' : 'theme-light'}">
       <aside class="chat-rail">
         <a href="/" data-link class="chat-rail-button">${icon('back', 'chat-rail-icon')}</a>
         <button type="button" class="chat-rail-button ${toolbarState?.activeRail === 'chats' ? 'active' : ''}" data-rail-action="chats">${icon('chat', 'chat-rail-icon')}</button>
         <button type="button" class="chat-rail-button ${toolbarState?.activeRail === 'media' ? 'active' : ''}" data-rail-action="media">${icon('bubbles', 'chat-rail-icon')}</button>
         <button type="button" class="chat-rail-button ${toolbarState?.activeRail === 'account' ? 'active' : ''}" data-rail-action="account">${icon('user', 'chat-rail-icon')}</button>
+        <button type="button" class="chat-rail-button ${themeMode === 'dark' ? 'active' : ''}" data-rail-action="theme" title="${themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}" aria-label="${themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}">${icon(themeMode === 'dark' ? 'sun' : 'moon', 'chat-rail-icon')}</button>
         <div class="chat-rail-spacer"></div>
         <button id="logout-button" type="button" class="chat-rail-button">${icon('lock', 'chat-rail-icon')}</button>
       </aside>
 
-      <section class="chat-shell ${hasProfilePanel ? 'profile-open' : ''}">
-        <aside class="chat-sidebar">
+      <section id="chat-shell" class="chat-shell ${hasProfilePanel ? 'profile-open' : ''}">
+        <div id="chat-sidebar-slot">
+          <aside class="chat-sidebar">
           <div class="chat-sidebar-top">
             <div>
               <h1>Let's chat</h1>
@@ -1098,26 +1372,131 @@ export function chatView({ user, users, selectedUserId, messages, pickerState, t
 
           <label class="chat-search">
             ${icon('search', 'chat-search-icon')}
-            <input id="sidebar-search-input" type="text" placeholder="Search or start a new chat" value="${escapeHtml(toolbarState?.sidebarQuery || '')}" />
+            <input id="sidebar-search-input" type="text" placeholder="Search or start a new chat" value="${escapeHtml(toolbarState?.sidebarQuery || '')}" ${sidebarLocked ? 'disabled' : ''} />
           </label>
 
           <div class="chat-user-list">
             ${usersMarkup || '<p class="chat-placeholder">No users found.</p>'}
           </div>
-        </aside>
+          </aside>
+        </div>
 
-        <section class="chat-content">
-          ${messagesPaneView({
-            selectedUser,
-            messages,
-            currentUserId: user?.id,
-            pickerState,
-            toolbarState,
-            callState,
-          })}
-        </section>
-        ${toolbarState?.selfProfileOpen ? selfProfilePanelView(user, messages, toolbarState) : profilePanelView(selectedUser, messages, toolbarState)}
+        <div id="chat-content-slot">
+          <section class="chat-content">
+            ${messagesPaneView({
+              selectedUser,
+              messages,
+              currentUserId: user?.id,
+              pickerState,
+              toolbarState,
+              callState,
+              recordingState,
+            })}
+          </section>
+        </div>
+        <div id="chat-profile-slot">
+          ${toolbarState?.selfProfileOpen ? selfProfilePanelView(user, messages, toolbarState) : profilePanelView(selectedUser, messages, toolbarState)}
+        </div>
       </section>
     </div>
   `
+}
+
+export function chatPartialView({ user, users, selectedUserId, messages, pickerState, toolbarState, callState, recordingState, themeMode, conversationPreviews }) {
+  const selectedUser = users.find((chatUser) => chatUser.id === selectedUserId)
+  const hasProfilePanel = Boolean(toolbarState?.selfProfileOpen || toolbarState?.profileOpen)
+  const sidebarLocked = Boolean(recordingState?.active || recordingState?.sending)
+  const sidebarSearch = toolbarState?.sidebarQuery?.trim().toLowerCase() || ''
+  const duplicateNameCounts = users.reduce((counts, chatUser) => {
+    const normalizedName = (chatUser.name || '').trim().toLowerCase()
+
+    if (normalizedName) {
+      counts[normalizedName] = (counts[normalizedName] || 0) + 1
+    }
+
+    return counts
+  }, {})
+  const visibleUsers = sidebarSearch
+    ? users.filter((chatUser) =>
+      [chatUser.name, chatUser.email]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(sidebarSearch))
+    )
+    : users
+  const usersMarkup = visibleUsers
+    .map((chatUser) => {
+      const normalizedName = (chatUser.name || '').trim().toLowerCase()
+      const hasDuplicateName = normalizedName && duplicateNameCounts[normalizedName] > 1
+      const displayName = hasDuplicateName
+        ? `${chatUser.name} · ${chatUser.email}`
+        : chatUser.name
+      const activeThreadPreview = conversationPreviews?.[chatUser.id] || null
+      const previewSource = activeThreadPreview
+        ? previewMessageLabel(activeThreadPreview)
+        : (hasDuplicateName ? chatUser.email : `Message ${chatUser.name} directly`)
+      const previewDay = activeThreadPreview ? formatSidebarDay(activeThreadPreview.created_at) : 'Today'
+      const previewStatus = activeThreadPreview && String(activeThreadPreview.sender_id) === String(user?.id)
+        ? renderMessageStatus(activeThreadPreview)
+        : ''
+
+      return `
+        <button class="user-item ${selectedUserId === chatUser.id ? 'active' : ''}" data-user-id="${chatUser.id}" ${sidebarLocked ? 'disabled' : ''}>
+          <span class="avatar chat-list-avatar">${escapeHtml(chatUser.name?.slice(0, 1) || '?')}</span>
+          <span class="user-copy">
+            <span class="user-row-top">
+              <strong>${escapeHtml(displayName)}</strong>
+              <small class="${chatUser.is_online ? 'presence-online' : ''}">${escapeHtml(chatUser.is_online ? 'Online' : previewDay)}</small>
+            </span>
+            <small class="user-preview-line"><span>${escapeHtml(previewSource || formatPresenceLabel(chatUser) || chatUser.email)}</span>${previewStatus}</small>
+          </span>
+        </button>
+      `
+    })
+    .join('')
+
+  const sidebar = `
+    <aside class="chat-sidebar">
+      <div class="chat-sidebar-top">
+        <div>
+          <h1>Let's chat</h1>
+          <span>${escapeHtml(user?.name || 'User')} · ${escapeHtml(user?.email || '')}</span>
+        </div>
+      </div>
+
+      <label class="chat-search">
+        ${icon('search', 'chat-search-icon')}
+        <input id="sidebar-search-input" type="text" placeholder="Search or start a new chat" value="${escapeHtml(toolbarState?.sidebarQuery || '')}" ${sidebarLocked ? 'disabled' : ''} />
+      </label>
+
+      <div class="chat-user-list">
+        ${usersMarkup || '<p class="chat-placeholder">No users found.</p>'}
+      </div>
+    </aside>
+  `
+
+  const content = `
+    <section class="chat-content">
+      ${messagesPaneView({
+        selectedUser,
+        messages,
+        currentUserId: user?.id,
+        pickerState,
+        toolbarState,
+        callState,
+        recordingState,
+      })}
+    </section>
+  `
+
+  const profile = toolbarState?.selfProfileOpen
+    ? selfProfilePanelView(user, messages, toolbarState)
+    : profilePanelView(selectedUser, messages, toolbarState)
+
+  return {
+    pageClassName: `chat-page ${themeMode === 'dark' ? 'theme-dark' : 'theme-light'}`,
+    shellClassName: `chat-shell ${hasProfilePanel ? 'profile-open' : ''}`,
+    sidebar,
+    content,
+    profile,
+  }
 }

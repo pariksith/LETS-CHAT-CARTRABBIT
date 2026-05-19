@@ -1,11 +1,28 @@
 import { root } from './dom.js'
 import { navigate } from './router.js'
 
+let commonEventsBound = false
+
 export function bindCommonEvents() {
-  root.querySelectorAll('[data-link]').forEach((element) => {
-    element.addEventListener('click', (event) => {
+  if (!root || commonEventsBound) {
+    return
+  }
+
+  commonEventsBound = true
+
+  root.addEventListener('click', (event) => {
+    const element = event.target.closest('[data-link]')
+
+    if (!element || !root.contains(element)) {
+      return
+    }
+
+    if (root.querySelector('.chat-page .chat-input-bar.recording')) {
       event.preventDefault()
-      navigate(element.getAttribute('href'))
-    })
+      return
+    }
+
+    event.preventDefault()
+    navigate(element.getAttribute('href'))
   })
 }
