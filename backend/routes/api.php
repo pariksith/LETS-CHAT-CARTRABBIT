@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Route;
 // Public Routes (No auth required)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
+Route::get('/media/{filename}', [ChatController::class, 'serveMedia'])
+    ->where('filename', '.*');
 
 // Protected Routes (Sanctum auth required)
 Route::middleware('auth:sanctum')->group(function () {
@@ -19,10 +21,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Users
     Route::get('/users', [UserController::class, 'index']);
+    Route::post('/presence/heartbeat', [UserController::class, 'heartbeat']);
 
     // Chat
+    Route::get('/chat/bootstrap', [ChatController::class, 'bootstrap']);
     Route::get('/messages/{user}', [ChatController::class, 'getMessages']);
     Route::post('/messages', [ChatController::class, 'sendMessage']);
+    Route::post('/send-message', [ChatController::class, 'sendMessage']);
+    Route::post('/messages/delivered', [ChatController::class, 'markDelivered']);
+    Route::post('/messages/{user}/read', [ChatController::class, 'markRead']);
     Route::delete('/messages/{user}', [ChatController::class, 'clearMessages']);
 
     // Calls
