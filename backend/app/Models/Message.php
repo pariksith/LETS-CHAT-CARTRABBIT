@@ -15,11 +15,17 @@ class Message extends Model
         'type',
         'content',
         'media_url',
+        'status',
+        'duration_seconds',
+        'delivered_at',
+        'read_at',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'read_at' => 'datetime',
     ];
 
     // Sender relationship

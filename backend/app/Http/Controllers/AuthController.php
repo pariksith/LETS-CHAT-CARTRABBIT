@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -14,11 +15,19 @@ class AuthController extends Controller
     // Register a new user
     public function register(RegisterRequest $request)
     {
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        $validated = $request->validated();
+        $payload = [
+            'name'     => $validated['name'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ];
+
+        if ($this->supportsPresenceColumns()) {
+            $payload['is_online'] = true;
+            $payload['last_seen_at'] = now();
+        }
+
+        $user = User::create($payload);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -32,9 +41,10 @@ class AuthController extends Controller
     // Login user
     public function login(LoginRequest $request)
     {
-        $user = User::where('email', $request->email)->first();
+        $validated = $request->validated();
+        $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -42,6 +52,7 @@ class AuthController extends Controller
 
         // Revoke old tokens
         $user->tokens()->delete();
+        $this->touchPresence($user, true);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -55,6 +66,7 @@ class AuthController extends Controller
     // Logout user
     public function logout(Request $request)
     {
+        $this->touchPresence($request->user(), false);
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -65,6 +77,33 @@ class AuthController extends Controller
     // Get authenticated user
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        $this->touchPresence($user, true);
+
+        return response()->json($user->fresh());
+    }
+
+    private function supportsPresenceColumns(): bool
+    {
+        static $supported = null;
+
+        if ($supported === null) {
+            $supported = Schema::hasColumn('users', 'is_online')
+                && Schema::hasColumn('users', 'last_seen_at');
+        }
+
+        return $supported;
+    }
+
+    private function touchPresence(User $user, bool $isOnline): void
+    {
+        if (!$this->supportsPresenceColumns()) {
+            return;
+        }
+
+        $user->forceFill([
+            'is_online' => $isOnline,
+            'last_seen_at' => now(),
+        ])->save();
     }
 }

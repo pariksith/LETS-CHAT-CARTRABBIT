@@ -15,9 +15,10 @@ class StoreMessageRequest extends FormRequest
     {
         return [
             'receiver_id' => 'required|exists:users,id|different:' . $this->user()->id,
-            'type' => 'nullable|in:text,gif,sticker,image,file',
+            'type' => 'nullable|in:text,gif,sticker,image,file,audio,voice',
             'content' => 'required_without:media_url|nullable|string|max:5000',
-            'media_url' => 'required_without:content|nullable|string|max:200000',
+            'media_url' => 'required_without:content|nullable|string|max:500000',
+            'duration_seconds' => 'nullable|integer|min:1|max:3600',
         ];
     }
 }
